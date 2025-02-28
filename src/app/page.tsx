@@ -16,7 +16,8 @@ import { Input } from "@/components/ui/input";
 
 import { useRouter } from "next/navigation";
 
-import { socket } from "@/lib/socketClient";
+import { socket } from "@/socket";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const formSchema = z.object({
   name: z
@@ -59,60 +60,79 @@ export default function UserLoginForm() {
   });
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
-    // This is for the user the user that logs in with the avatar "icon" of in the chat app
+    //save the user data in the context to be then retrieved and push him in the custom room url
     const avatar = data.name[0].toUpperCase() + data.surname[0].toUpperCase();
 
     localStorage.setItem("avatar", avatar);
-    localStorage.setItem("room_id", data.room); // spara room_id för koppla till numret
+    localStorage.setItem("name", data.name);
+    localStorage.setItem("surname", data.surname);
 
-    router.push("/home");
+    router.push(`/home/${data.room}`);
   };
+  // todo add card and wrap and start chat logic
   return (
-    <div className="flex items-center h-screen justify-center transform sm:scale-150 md:scale-125 lg:scale-100">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter your name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="surname"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Surname</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter your surname" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="room"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>room</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter room id" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button type="submit">Submit</Button>
-        </form>
-      </Form>
+    <div className="flex items-center h-screen justify-center bg-black transform sm:scale-150 md:scale-100">
+      <Card className="p-5 bg-white rounded-md md:w-[50%] w-[70%]">
+        <CardHeader className="justify-center text-center font-semibold">
+          <CardTitle>Log in to chat room</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-8 border-black"
+            >
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="surname"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Surname</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your surname" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="room"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Room</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter room id" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-center w-[100%]">
+                <Button
+                  className="text-center border-black border-2 w-[80%] hover:bg-slate-300"
+                  type="submit"
+                >
+                  Submit
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
