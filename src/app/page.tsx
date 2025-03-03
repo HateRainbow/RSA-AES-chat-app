@@ -16,8 +16,8 @@ import { Input } from "@/components/ui/input";
 
 import { useRouter } from "next/navigation";
 
-import { socket } from "@/socket";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { generateRSAKeyPair } from "@/lib/encryption";
 
 const formSchema = z.object({
   name: z
@@ -62,10 +62,18 @@ export default function UserLoginForm() {
   const onSubmit = (data: z.infer<typeof formSchema>) => {
     //save the user data in the context to be then retrieved and push him in the custom room url
     const avatar = data.name[0].toUpperCase() + data.surname[0].toUpperCase();
+    const { privateKey, publicKey } = generateRSAKeyPair();
 
-    localStorage.setItem("avatar", avatar);
-    localStorage.setItem("name", data.name);
-    localStorage.setItem("surname", data.surname);
+    sessionStorage.setItem(
+      "user",
+      JSON.stringify({
+        name: data.name,
+        surname: data.surname,
+        avatar,
+        publicKey,
+        privateKey,
+      })
+    );
 
     router.push(`/home/${data.room}`);
   };

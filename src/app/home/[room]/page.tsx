@@ -8,89 +8,116 @@ import { ChatMessageList } from "@/components/ui/chat/chat-message-list";
 import { Button } from "@/components/ui/button";
 import { ChatInput } from "@/components/ui/chat/chat-input";
 
-import { useState, useEffect, FormEvent } from "react";
-
+import { useState, useEffect, type FormEvent } from "react";
 import { useParams } from "next/navigation";
-
 import { CornerDownLeft, Mic, Paperclip } from "lucide-react";
 
 import Clock from "@/components/Clock";
 import ConnectionStatus from "@/components/Socket";
 import { socket } from "@/socket";
+import { getUserData } from "@/utils/getSessionStorage";
 
-import { getUserData } from "@/app/utils/getLocalStorage";
+import {
+  aesDecryptMessage,
+  aesEncryptMessage,
+  rsaDecryptAesKey,
+  rsaEncryptAesKey,
+} from "@/lib/encryption";
 
-type SystemMessage = {
-  variant: "system";
-};
+import type {
+  User,
+  Message,
+  UserData,
+  EncryptedMessage,
+} from "../../../../types/types";
 
-type UserMessage = {
-  variant: "sent" | "received";
-  avatar: string;
-};
-
-// if variant system it doens't contain an avatar
-export type Message = {
-  message: string;
-} & (UserMessage | SystemMessage);
-
-export default function page() {
-  const searchParams: any = useParams();
-  const room = searchParams.id;
-  const user = getUserData();
+export default function ChatPage() {
+  const params = useParams();
+  const room = params.room as string;
+  const user = getUserData() as UserData;
+  const [users, setUsers] = useState<User[]>([]);
   const [message, setMessage] = useState("");
   const [chatMessages, setChatMessages] = useState<Message[]>([
-    { variant: "system", message: "" },
+    { variant: "system", message: `Welcome to room ${room}` },
   ]);
 
   useEffect(() => {
-    socket.on("user_left", (message: any) => {
-      setChatMessages((prevMessages) => [
-        ...prevMessages,
-        { variant: "system", message: message },
-      ]);
+    socket.on("user-joined-room", ({ message, rsaPublicKey, id }) => {
+      setChatMessages((prevMessages) => [...prevMessages, message]);
+
+      setUsers((prevUsers) => [...prevUsers, { id, rsaPublicKey }]);
     });
 
-    socket.on("user_joined", (message: string) => {
-      setChatMessages((prevMessages) => [
-        ...prevMessages,
-        { variant: "system", message: message },
-      ]);
+    // Handle incoming messages
+    socket.on(
+      "send-message",
+      ({ avatar, encryptedAesKey, encryptedMessage, iv }) => {
+        const decodedAesKey = rsaDecryptAesKey(
+          encryptedAesKey,
+          user.privateKey
+        );
+
+        const decryptedMessage = aesDecryptMessage(
+          encryptedMessage,
+          decodedAesKey,
+          iv
+        );
+
+        setChatMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            variant: "received",
+            avatar: avatar,
+            message: decryptedMessage,
+          },
+        ]);
+      }
+    );
+
+    socket.on("user-disconnected", ({ id, message }) => {
+      setUsers((prevUsers) => prevUsers.filter((u) => u.id !== id));
+      setChatMessages((prevMessages) => [...prevMessages, message]);
     });
 
-    socket.on("message", (data: any) => {
-      setChatMessages((prev) => [
-        ...prev,
-        { variant: "received", avatar: data.avatar, message: data.message },
-      ]);
-    });
-
-    socket.emit("join-room", {
-      room,
+    socket.emit("user-joined", {
+      avatar: user.avatar,
       name: user.name,
       surname: user.surname,
-      avatar: user.avatar,
+      room,
+      rsaPublicKey: user.publicKey,
     });
 
     return () => {
-      socket.off("user_joined");
+      socket.off("user-joined");
       socket.off("message");
-      socket.off("user_left");
+      socket.off("disconnect");
     };
   }, []);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    socket.emit("message", {
-      room: room,
-      avatar: user.avatar,
-      message: message,
+    if (!message) return;
+
+    const { encryptedMessage, iv, key }: EncryptedMessage =
+      aesEncryptMessage(message);
+
+    users.forEach((receiver) => {
+      const encryptedAesKey = rsaEncryptAesKey(key, receiver.rsaPublicKey);
+
+      socket.emit("message", {
+        room,
+        avatar: user.avatar,
+        encryptedMessage,
+        encryptedAesKey,
+        iv,
+        id: receiver.id,
+      });
     });
 
-    setChatMessages([
-      ...chatMessages,
-      { avatar: user.avatar, message: message, variant: "sent" },
+    setChatMessages((prev) => [
+      ...prev,
+      { avatar: user.avatar, message, variant: "sent" },
     ]);
 
     setMessage("");
@@ -98,7 +125,7 @@ export default function page() {
 
   return (
     <div className="flex justify-center items-center w-screen h-screen flex-col bg-slate-400">
-      <header className="md:min-h-7 sm:h-[20%]">
+      <header>
         <nav className="flex justify-between items-center w-screen p-3 bg-gray-800 text-white font-serif">
           <div className="font-black text-base md:text-lg">
             <span>Chat room {room}</span>
@@ -114,21 +141,19 @@ export default function page() {
 
       {/* Chat messages */}
       <div className="flex flex-col gap-0 w-screen flex-grow">
-        {chatMessages.map((message, index) => {
-          return message.variant === "system" ? (
+        {chatMessages.map((msg, index) => {
+          return msg.variant === "system" ? (
             <p className="text-black text-center" key={index}>
-              {message.message}
+              {msg.message}
             </p>
           ) : (
             <ChatMessageList className="gap-y-0" key={index}>
-              <ChatBubble variant={message.variant}>
+              <ChatBubble variant={msg.variant}>
                 <ChatBubbleAvatar
-                  fallback={
-                    message.variant === "sent" ? user.avatar : message.avatar
-                  }
+                  fallback={msg.variant === "sent" ? user.avatar : msg.avatar}
                 />
-                <ChatBubbleMessage variant={message.variant}>
-                  {message.message}
+                <ChatBubbleMessage variant={msg.variant}>
+                  {msg.message}
                 </ChatBubbleMessage>
               </ChatBubble>
             </ChatMessageList>
