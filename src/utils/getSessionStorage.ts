@@ -1,8 +1,8 @@
 "use client";
 
-import type { UserData } from "../../types/types";
+import type { UserData } from "~/types/types";
 
-export function getUserData(): UserData {
+export function getUserData() {
   const userData = sessionStorage.getItem("user");
   if (!userData) throw new Error("NO user data");
 

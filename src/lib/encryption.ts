@@ -2,8 +2,8 @@ import forge from "node-forge";
 import CryptoJS from "crypto-js";
 
 const aesEncryptMessage = (message: string) => {
-  const key = CryptoJS.lib.WordArray.random(32); // 256 bit that is 32 bytes
-  const iv = CryptoJS.lib.WordArray.random(16);
+  const key = CryptoJS.lib.WordArray.random(32); // generate a ranodm AES key of 256 bytes
+  const iv = CryptoJS.lib.WordArray.random(16); // generate a iv vector that adds randomness to the value
   const encryptedMessage = CryptoJS.AES.encrypt(message, key, {
     iv: iv,
   }).toString();
@@ -16,7 +16,8 @@ const aesEncryptMessage = (message: string) => {
 };
 
 const aesDecryptMessage = (cipherText: string, key: string, iv: string) => {
-  const keyParsedBase64 = CryptoJS.enc.Base64.parse(key);
+  // return them into bytes
+  const keyParsedBase64 = CryptoJS.enc.Base64.parse(key); 
   const ivParsedBase64 = CryptoJS.enc.Base64.parse(iv);
 
   return CryptoJS.AES.decrypt(cipherText, keyParsedBase64, {
