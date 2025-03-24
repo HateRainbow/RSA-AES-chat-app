@@ -60,7 +60,6 @@ export default function UserLoginForm() {
   });
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
-    //save the user data in the context to be then retrieved and push him in the custom room url
     const avatar = data.name[0].toUpperCase() + data.surname[0].toUpperCase();
     const { privateKey, publicKey } = generateRSAKeyPair();
 
@@ -77,7 +76,7 @@ export default function UserLoginForm() {
 
     router.push(`/home/${data.room}`);
   };
-  // todo add card and wrap and start chat logic
+
   return (
     <div className="flex items-center h-screen justify-center bg-black transform sm:scale-150 md:scale-100">
       <Card className="p-5 bg-white rounded-md md:w-[50%] w-[70%]">
