@@ -30,7 +30,7 @@ import type {
   Message,
   UserData,
   EncryptedMessage,
-} from "../../../../types/types";
+} from "~/types/types";
 
 export default function ChatPage() {
   const params = useParams();
@@ -108,7 +108,7 @@ export default function ChatPage() {
 
       socket.emit("message", {
         room,
-        avatar: user.avatar,
+        avatar: avatar,
         encryptedMessage,
         encryptedAesKey,
         iv,
@@ -118,7 +118,7 @@ export default function ChatPage() {
 
     setChatMessages((prev) => [
       ...prev,
-      { avatar: user.avatar, message, variant: "sent" },
+      { avatar, message, variant: "sent" },
     ]);
 
     setMessage("");
@@ -151,7 +151,7 @@ export default function ChatPage() {
             <ChatMessageList className="gap-y-0" key={index}>
               <ChatBubble variant={msg.variant}>
                 <ChatBubbleAvatar
-                  fallback={msg.variant === "sent" ? user.avatar : msg.avatar}
+                  fallback={msg.variant === "sent" ? avatar : msg.avatar}
                 />
                 <ChatBubbleMessage variant={msg.variant}>
                   {msg.message}

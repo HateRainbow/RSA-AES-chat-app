@@ -1,14 +1,13 @@
 import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
+
 import type {
   ClientToServerEvents,
   ServerToClientEvents,
 } from "./types/socketInterface";
 import type {
   RoomUserData,
-  disconnectedUser,
-  User,
   SystemMessageType,
 } from "./types/types";
 
@@ -57,6 +56,7 @@ app.prepare().then(() => {
       }
     );
 
+    // send message to specific user id
     socket.on(
       "message",
       ({ room, avatar, encryptedMessage, encryptedAesKey, iv, id }) => {
