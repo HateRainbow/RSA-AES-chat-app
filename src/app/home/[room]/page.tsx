@@ -10,6 +10,7 @@ import { ChatInput } from "@/components/ui/chat/chat-input";
 
 import { useState, useEffect, type FormEvent } from "react";
 import { useParams } from "next/navigation";
+
 import { CornerDownLeft, Mic, Paperclip } from "lucide-react";
 
 import Clock from "@/components/Clock";
@@ -34,7 +35,7 @@ import type {
 export default function ChatPage() {
   const params = useParams();
   const room = params.room as string;
-  const user = getUserData() as UserData;
+  const { avatar, name, surname, publicKey, privateKey } = getUserData() as UserData;
   const [users, setUsers] = useState<User[]>([]);
   const [message, setMessage] = useState("");
   const [chatMessages, setChatMessages] = useState<Message[]>([
@@ -54,7 +55,7 @@ export default function ChatPage() {
       ({ avatar, encryptedAesKey, encryptedMessage, iv }) => {
         const decodedAesKey = rsaDecryptAesKey(
           encryptedAesKey,
-          user.privateKey
+          privateKey
         );
 
         const decryptedMessage = aesDecryptMessage(
@@ -80,11 +81,11 @@ export default function ChatPage() {
     });
 
     socket.emit("user-joined", {
-      avatar: user.avatar,
-      name: user.name,
-      surname: user.surname,
+      avatar,
+      name,
+      surname,
       room,
-      rsaPublicKey: user.publicKey,
+      rsaPublicKey: publicKey,
     });
 
     return () => {
