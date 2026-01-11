@@ -89,9 +89,10 @@ export default function ChatPage() {
     });
 
     return () => {
-      socket.off("user-joined");
-      socket.off("message");
-      socket.off("disconnect");
+      socket.off("user-joined-room");
+      socket.off("message")
+      socket.off("send-message")
+      socket.off("user-disconnected");
     };
   }, []);
 
